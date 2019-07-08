@@ -1074,11 +1074,14 @@ def execute_miniboone_parallel(genlist = True):
     #vmarr = [1,5,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150]
     #massarr=[[mv,mv/3.0,mv/3.0] for mv in vmarr]
     #vmarr=[3,5,7,10]
-    vmarr=[15,20,30,40,60,80,100,200,300,500,750,1000]
-    dmarr = [x for x in range(5,150,10)]+[x for x in range(150,280,10)]+[1,3,7,67,269,271]
+    vmarr=[2.5,2.6,2.7,2.8,2.9,3,3.2,3.4,3.6,3.8,4,4.3,4.5,4.8,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25,30,35,40,50,60,70,80,90,100,150,200,300,400,500,600,700,800,900,1000] 
+    dmarr = [x for x in range(5,150,10)]+[x for x in range(150,280,10)]
+    #+[x for x in range(280,520,20)]
+    dmarr+=[1,1.2,1.4,1.6,1.8,2,2.2,2.4,2.6,2.8,3,4,6,7,8,9,12,15,17,67,269,271]
     dmarr.sort()
     massarr=[[vrat*dm,dm,dm] for vrat in vmarr for dm in dmarr]
     print(massarr)
+    d_list=[]
     for marr in massarr:
         #d={"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "signal_chan" : "Signal_Decay", "output_mode" : "comprehensive", "det_switch" : "miniboone_full", "sumlog" : "Decay_Events/miniboone_decay.dat", "samplesize" : 1000}
         #d={"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "signal_chan" : "NCE_electron", "output_mode" : "summary", "det_switch" : "miniboone", "alpha_D" : 0.01, "channels" : channs, 'sumlog' : "Toro_project/4_miniboone.dat", 'samplesize' : 1000, 'max_scatter_energy' : 2}
@@ -1086,9 +1089,11 @@ def execute_miniboone_parallel(genlist = True):
         #d={"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "signal_chan" : "NCE_electron", "output_mode" : "dm_detector_distribution", "det_switch" : "sbnd", "alpha_D" : 0.5, "channels" : [_pion_decay], 'efficiency' : 0.5, 'POT' : 6e20, 'sumlog' : "Claudia/SBND_Distribution.dat", 'samplesize' : 1000, 'max_scatter_energy' : 2, 'samplesize' : 10000}
         #miniboone_eval(d)
         #d={"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "signal_chan" : "NCE_electron", "output_mode" : "summary", "det_switch" : "miniboone", "alpha_D" : 0.5, "channels" : channs, 'max_scatter_energy' : 2}
-        d={"model" : "Inelastic_Dark_Matter", "mv" : marr[0],"mdm1" : marr[1], "mdm2" : marr[2],"samplesize" : 5000, "signal_chan" : "NCE_electron", 'max_scatter_energy' : 2, 'min_scatter_energy' : 0.0, 'max_scatter_angle' : 0.14, "output_mode" : "summary", "det_switch" : "sbnd", "alpha_D" : 0.5, "channels" : channs, 'sumlog' : "IDM_Events/sbnd_elec_angle.dat", 'outlog' : "IDM_Events/sbnd_electron_{}_{}.dat".format(marr[0],marr[1]),'efficiency' : 0.6, "POT" : 6e20}
-        miniboone_eval(d)
-
+        d={"model" : "Inelastic_Dark_Matter", "mv" : marr[0],"mdm1" : marr[1], "mdm2" : marr[2],"samplesize" : 2000, "signal_chan" : "NCE_electron", 'max_scatter_energy' : 2, 'min_scatter_energy' : 0.0, 'max_scatter_angle' : 0.14, "output_mode" : "summary", "det_switch" : "sbnd", "alpha_D" : 0.5, "channels" : channs, 'sumlog' : "IDM_Events/sbnd_events.dat", 'outlog' : "IDM_Events/sbnd_electron_{}_{}.dat".format(marr[0],marr[1]),'efficiency' : 0.6, "POT" : 6e20}
+        d_list.append(copy.deepcopy(d))
+        #miniboone_eval(d)
+    pool = Pool(processes=4)
+    pool.map(miniboone_eval,d_list)
 
 def execute_charm(genlist=True):
     if genlist:
