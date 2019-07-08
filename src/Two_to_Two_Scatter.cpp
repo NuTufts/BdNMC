@@ -1,6 +1,7 @@
 #include "Scatter.h"
 #include "Kinematics.h"
 #include "constants.h"
+#include "Integrator.h"
 
 using std::string; using std::vector;
 using std::cout; using std::endl;
@@ -66,8 +67,8 @@ bool Two_to_Two_Scatter::probscatter(std::shared_ptr<detector>& det, Particle& p
 
     double LXDet = m_to_cm*(det->Ldet(part));
     double total=0; vector<double> prob;
-//    part.report(cout);
-//    cout << "LXDet = " << LXDet << endl;
+    //part.report(cout);
+    //cout << "LXDet = " << LXDet << endl;
     for(int i = 0; i < chan_number; i++){
         //Check if this particle is a valid target for this channel!
     //    cout << "i = " << i << " in_name[i] = " << in_name[i] << endl;
@@ -164,6 +165,7 @@ void Two_to_Two_Scatter::scatterevent (Particle &part, double targ_mass, Particl
     }
 }
 
+//Note that these return E4min and E4max.
 //I'm going to need to break these down by channel eventually.
 double Two_to_Two_Scatter::scatmax(double E1, double m1, double m2, double m3, double m4){
     return(std::min(Escatmax,E4max(E1,m1,m2,m3,m4)));
@@ -172,4 +174,30 @@ double Two_to_Two_Scatter::scatmax(double E1, double m1, double m2, double m3, d
 double Two_to_Two_Scatter::scatmin(double E1, double m1, double m2, double m3, double m4){
     //cout << "Escatmin = " << Escatmin << endl; 
     return(std::max(Escatmin,E4min(E1,m1,m2,m3,m4)));
+}
+
+
+//A specialized version of add_channel
+void Two_to_Two_Scatter::Build_Channel(Particle& out_state, Particle& end_state, double in_mass, double targ_mass, std::function<double(double,double)> &dsig, double num_density, const std::string in_state, double Max_Energy, double EDM_RES){
+        
+        std::shared_ptr<Linear_Interpolation> cross;
+        std::shared_ptr<Linear_Interpolation> cross_max;
+
+        std::function<double(double)> ER_min = std::bind(&Two_to_Two_Scatter::scatmin,*this,_1,in_mass,targ_mass,out_state.m, end_state.m);
+        std::function<double(double)> ER_max = std::bind(&Two_to_Two_Scatter::scatmax,*this,_1,in_mass,targ_mass,out_state.m, end_state.m);
+
+        std::function<double(double)> f = std::bind(dsig,1.8,_1);
+
+//        cout << f(1.4) << endl;
+//        cout << DoubleExponential_adapt(f, ER_min(1.8), ER_max(1.8), 200, 0.1, 1e-4) << endl;;
+//        throw -1;
+
+        Prepare_Cross_Section(dsig, ER_min, ER_max, cross, cross_max, in_mass,Max_Energy,EDM_RES);
+
+        function<double(double)> cross_func = bind(&Linear_Interpolation::Interpolate,cross,_1);
+        function<double(double)> cross_max_func = bind(&Linear_Interpolation::Interpolate,cross_max,_1);
+
+//        cout << cross_func(1) << endl;
+
+        add_channel(out_state, end_state, targ_mass, cross_func, cross_max_func, dsig, num_density, in_state);
 }
