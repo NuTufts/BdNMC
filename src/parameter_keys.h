@@ -1,3 +1,6 @@
+#ifndef parameter_key_h
+#define paramater_key_h
+
 #include <vector>
 #include <string>
 
@@ -11,6 +14,8 @@ const string min_scatter_energy_key = "min_scatter_energy";
 const string max_scatter_energy_key = "max_scatter_energy";
 const string angle_lower_limit_key = "min_scatter_angle";
 const string angle_upper_limit_key = "max_scatter_angle";
+const string etheta2_max_key = "etheta2_max";
+const string etheta2_min_key = "etheta2_min";
 const string timing_key = "timing_cut";
 const string scatter_dist_filename_key = "scatter_dist_filename";
 
@@ -69,3 +74,5 @@ vector<string> spherearr = {"radius","x-position","y-position","z-position"};
 vector<string> cylinderarr = {"radius","length","x-position","y-position","z-position","det-theta","det-phi"};
 vector<string> cuboidarr = {"length","width","height","x-position","y-position","z-position","det-phi","det-theta","det-psi"};
 const string run_key = "run";
+
+#endif

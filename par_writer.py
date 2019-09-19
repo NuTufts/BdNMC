@@ -79,6 +79,11 @@ defaults = {"eps" : 1e-3, "mdm" : 0.03, "mv" : 0.1, "alpha_D" : 0.1, "prod_chan"
         4, "p_num_target" : 4, "max_trials" : 80e6, "ptmax" : 0.2, "zmin" : 0.3, "zmax" : 0.7, "run" : -1, "POT" : 2e20, "pi0_per_POT" : 0.9, "p_cross" : 25*mb, "meson_per_pi0" : meson_per_pi0_miniboone, "min_scatter_angle" : 0.0, "max_scatter_angle" : 2.1*pi, "repeat" : 1, "timing" : 0.0, "burn_max" : -1,"inelastic_dist" : "data/DIS.dat", "coherent" : 'false', "model" : "Dark_Photon", "gagg" : 0, "gagpg" : 0, "gagpgp" : 0, "min_event" : -1,"mdm1" : 0.03, "mdm2" :
         0.04, "weighted" : 'false'}
 
+def write_if_exists(f,dic,key):
+    if key in dic.keys():
+        f.write("{} {}\n".format(key,str(dic[key])))
+        
+
 def write_experiment(write_detector,user):
     context = defaults.copy()
     context.update(user)
@@ -162,6 +167,11 @@ def write_experiment(write_detector,user):
         f.write('coherent {}\n'.format(coherent))
         f.write('min_event {}\n'.format(str(min_event)))
         f.write('pi0_per_POT {}\n\n'.format(str(pi0_per_POT)))
+        
+        write_list = {'etheta2_max','etheta2_min'}
+        for key in write_list:
+            write_if_exists(f,context,key)
+        
         write_detector(f)
         f.close()
 

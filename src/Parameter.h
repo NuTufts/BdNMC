@@ -79,6 +79,8 @@ class Parameter{
 		double Max_Scatter_Energy(){return max_scatter_energy;}
 		double Max_Angle(){return angle_upper_limit;}
 		double Min_Angle(){return angle_lower_limit;}
+		double E_Theta2_Max(){return etheta2_max;}
+		double E_Theta2_Min(){return etheta2_min;}
 		double Timing_Cut(){return timing_cut;}
 		std::string Scatter_Dist_Filename(){return scatter_dist_filename;}
 
@@ -126,6 +128,7 @@ class Parameter{
 	
 		double angle_upper_limit;
 		double angle_lower_limit;
+		double etheta2_max, etheta2_min;
 		double edmres;
 		int burn_in;
 		int burn_timeout;

@@ -43,6 +43,8 @@ void Model::Prepare_Model(Parameter& par){
     std::cout << "Preparing signal channel " << par.Signal_Channel() << std::endl;
     scat_max = par.Max_Scatter_Energy();
     scat_min = par.Min_Scatter_Energy();
+    etheta2_max = par.E_Theta2_Max();
+    etheta2_min = par.E_Theta2_Min();
     if(!this->Prepare_Signal_Channel(par)){
         std::cerr << "Something is wrong with signal channel declaration\n";
         throw -1;

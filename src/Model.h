@@ -70,6 +70,7 @@ class Model{
         std::vector<double> Vnum_list;
         //Minimum and maximum scattering energies;
         double scat_max, scat_min,Vnumtot;
+        double etheta2_max,etheta2_min;
 };
 
 class Inelastic_Dark_Matter : public Model{

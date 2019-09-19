@@ -792,6 +792,8 @@ def numi_eval(d_user):
     d.update(d_user)
     MV=d["mv"]
     MX=d["mdm"]
+    MX1=d["mdm1"]
+    MX2=d["mdm2"]
     channels = d["channels"]
     det_switch=d["det_switch"]
     if "alpha_D" in d:
@@ -800,23 +802,11 @@ def numi_eval(d_user):
         eps=d['eps']
     sumlog=d["sumlog"]
     signal_channel = d["signal_chan"]
+    model = d["model"]
 
     t0 = time.time()
     outfile="parameter_run_{0}_{1}.dat".format(str(MV),str(MX))
     #if MX/1000.0<mpi0/2.0:
-    if "DIST" in d and "ANGLE" in d:
-        _DIST = d["DIST"]
-        _ANGLE = d["ANGLE"]
-
-        global _DET_XPOS, _DET_YPOS, _DET_ZPOS
-        if det_switch == "nova" or det_switch == "nova_abs":
-            _DET_XPOS = 0
-            _DET_YPOS = -_DIST*math.sin(math.radians(_ANGLE))
-            _DET_ZPOS = _DIST*math.cos(math.radians(_ANGLE))
-        else:
-            _DET_XPOS = _DIST*math.sin(math.radians(_ANGLE))
-            _DET_YPOS = 0
-            _DET_ZPOS = _DIST*math.cos(math.radians(_ANGLE))
 
     BEAM_ENERGY=120
     zmin=max(3*MV/1000.0/BEAM_ENERGY,0.1)
@@ -826,6 +816,7 @@ def numi_eval(d_user):
     prodchan = []
     partlistfile = [    ]
     executing=False
+
     if signal_channel=="Inelastic_Nucleon_Scattering_Baryonic" or signal_channel=="Baryonic_Test":
         if MX/1000.0<mpi0/2.0 and MV<1000 and _pion_decay in channels:
             proddist.append("particle_list")
@@ -855,6 +846,35 @@ def numi_eval(d_user):
             proddist.append("parton_V_baryonic")
             prodchan.append("parton_production_baryonic")
             partlistfile.append("")
+            executing=True
+    elif model == "Inelastic_Dark_Matter":
+        if (((MX1+MX2)/1000.0<mpi0) or (signal_channel=="Signal_Decay" and MV/1000.0<mpi0)) and _pion_decay in channels:
+            proddist.append("particle_list")
+            prodchan.append("pi0_decay")
+            partlistfile.append("data/particle_list_numi.dat")
+            executing=True
+        if (((MX1+MX2)/1000.0<meta) or (signal_channel=="Signal_Decay" and MV/1000.0<meta)) and _eta_decay in channels:
+            proddist.append("particle_list")
+            prodchan.append("eta_decay")
+            partlistfile.append("data/particle_list_numi.dat")
+            executing=True
+        if (MV>MX1+MX2 or signal_channel=="Signal_Decay") and zmin<zmax and _brem in channels:
+            proddist.append("proton_brem")
+            prodchan.append("V_decay")
+            partlistfile.append("")
+            executing=True
+        if MV/1000.0>=mrho and MV<=1250 and _phi_decay in channels:
+            proddist.append("particle_list")
+            prodchan.append("phi_decay")
+            partlistfile.append("data/particle_list_numi.dat")
+            executing=True
+        if ((MV<1200) and (MV>=350)) and _rho_decay in channels:
+            proddist.append("particle_list")
+            prodchan.append("rho_decay")
+            partlistfile.append("data/particle_list_numi.dat")
+            proddist.append("particle_list")
+            prodchan.append("omega_decay")
+            partlistfile.append("data/particle_list_numi.dat")
             executing=True
     else:
         if ((MX/1000.0<mpi0/2.0 and MV<600.0 and signal_channel!="Signal_Decay") or (MV/1000.0<mpi0 and signal_channel=="Signal_Decay")) and _pion_decay in channels:
@@ -919,11 +939,9 @@ def numi_eval(d_user):
             user2["POT"] = "1e20"
         d.update(user2)
     d.update(d_user)
-    d.update({"proddist" : proddist, "prod_chan" : prodchan, "partlistfile" : partlistfile,"mv" : MV/1000.0, "mdm" : MX/1000.0, "zmin" : zmin, "zmax" : zmax, "outfile" : outfile})
+    d.update({"proddist" : proddist, "prod_chan" : prodchan, "partlistfile" : partlistfile,"mv" : MV/1000.0, "mdm" : MX/1000.0, "mdm1" : MX1/1000.0, "mdm2" : MX2/1000.0,"zmin" : zmin, "zmax" : zmax, "outfile" : outfile})
     if det_switch == "nova":
         write_numi(d=d)
-    elif det_switch == "nova_absorber":
-        write_numi(d=d,det=NOvA_absorber_detector)
     elif det_switch == "minos":
         print("EXECUTING MINOS")
         write_numi(d=d,det=MINOS_detector)
@@ -931,18 +949,6 @@ def numi_eval(d_user):
         write_numi(d=d,det=MINOS_absorber_detector)
     elif det_switch == "miniboone_numi":
         write_numi(d=d,det=miniboone_detector_numi)
-    elif det_switch == "test_sphere":
-        write_numi(d=d,det=test_sphere)
-    elif det_switch == "test_cylinder":
-        write_numi(d=d,det=test_cylinder)
-    elif det_switch == "test_cuboid":
-        write_numi(d=d,det=test_cuboid)
-    elif det_switch == "YuDai_cylinder":
-        write_numi(d=d,det=YuDai_cylinder)
-    elif det_switch == "YuDai_cylinder_2":
-        write_numi(d=d,det=YuDai_cylinder_2)
-    elif det_switch == "YuDai_cylinder_abs":
-        write_numi_absorber(d=d,det=YuDai_cylinder_abs)
     elif det_switch == "DUNE_HPgTPC":
         write_numi(d=d,det=DUNE_HPgTPC)
     elif det_switch == "minerva":
@@ -1154,23 +1160,17 @@ def execute_miniboone_parallel(genlist = True):
         write_miniboone(d=d)
         subp.call(["./build/main", "parameter_run.dat"])
     channs={_brem,_pion_decay,_eta_decay}
-    #vmarr={5,50,100,200,300,400}
-    #epsarr={1e-6,3e-7,1e-7,3e-7,1e-8}
-    #massarr=[[mv,mv,eps] for mv in vmarr for eps in epsarr]
-    #vmarr = [1,3,4,5,7,9,10,12,15,17,19,21,23,59,61,199,201]+[x for x in range(25,135,5)]+[131,132,133,134,135,136,137,139]+[x for x in range(140,200,10)]+[x for x in range(200,1010,25)]+[765,770,771,772,773,774,776,777,778,779,780,785]
+   #vmarr = [1,3,4,5,7,9,10,12,15,17,19,21,23,59,61,199,201]+[x for x in range(25,135,5)]+[131,132,133,134,135,136,137,139]+[x for x in range(140,200,10)]+[x for x in range(200,1010,25)]+[765,770,771,772,773,774,776,777,778,779,780,785]
     #dmarr = [10]
-    #vmarr=[30]
-    #vmarr=[x for x in range(700,1010,25)]
-    #vmarr = [1,5,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150]
-    #massarr=[[mv,mv/3.0,mv/3.0] for mv in vmarr]
-    #vmarr=[3,5,7,10]
-    vmarr=[2.5,2.6,2.7,2.8,2.9,3,3.2,3.4,3.6,3.8,4,4.3,4.5,4.8,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25,30,35,40,50,60,70,80,90,100,150,200,300,400,500,600,700,800,900,1000] 
-    dmarr = [x for x in range(5,150,10)]+[x for x in range(150,280,10)]
-    #+[x for x in range(280,520,20)]
-    dmarr+=[1,1.2,1.4,1.6,1.8,2,2.2,2.4,2.6,2.8,3,4,6,7,8,9,12,15,17,67,269,271]
-    dmarr.sort()
-    massarr=[[vrat*dm,dm,dm] for vrat in vmarr for dm in dmarr]
-    print(massarr)
+    #dmarr.sort()
+    #massarr=[[vrat*dm,dm,dm] for vrat in vmarr for dm in dmarr]
+    #print(massarr)
+    #dmarr=[100]
+    #vmarr=[1,2,3,4,5,7,9,10,12,15,17,19,21,23]+[x for x in range(25,135,5)]+[131,132,133,134,135,136,137,139,195,198,202,205]+[x for x in range(140,200,10)]+[x for x in range(225,1010,25)]+[765,770,771,772,773,774,776,777,778,779,780,785]   
+    dmarr=[10,100]
+    vmarr=[2,6,10,30]
+    #vmarr+=[x for x in range(1250,2000,250)]+[x for x in range(2000,int(1e4),500)]+[x for x in range(int(1e4),int(1e5),int(1e4))]+[int(1e5)]
+    massarr=[[vm,dm,dm] for vm in vmarr for dm in dmarr]
     d_list=[]
     for marr in massarr:
         #d={"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "signal_chan" : "Signal_Decay", "output_mode" : "comprehensive", "det_switch" : "miniboone_full", "sumlog" : "Decay_Events/miniboone_decay.dat", "samplesize" : 1000}
@@ -1179,11 +1179,17 @@ def execute_miniboone_parallel(genlist = True):
         #d={"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "signal_chan" : "NCE_electron", "output_mode" : "dm_detector_distribution", "det_switch" : "sbnd", "alpha_D" : 0.5, "channels" : [_pion_decay], 'efficiency' : 0.5, 'POT' : 6e20, 'sumlog' : "Claudia/SBND_Distribution.dat", 'samplesize' : 1000, 'max_scatter_energy' : 2, 'samplesize' : 10000}
         #miniboone_eval(d)
         #d={"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "signal_chan" : "NCE_electron", "output_mode" : "summary", "det_switch" : "miniboone", "alpha_D" : 0.5, "channels" : channs, 'max_scatter_energy' : 2}
-        d={"model" : "Inelastic_Dark_Matter", "mv" : marr[0],"mdm1" : marr[1], "mdm2" : marr[2],"samplesize" : 2000, "signal_chan" : "NCE_electron", 'max_scatter_energy' : 2, 'min_scatter_energy' : 0.0, 'max_scatter_angle' : 0.14, "output_mode" : "summary", "det_switch" : "sbnd", "alpha_D" : 0.5, "channels" : channs, 'sumlog' : "IDM_Events/sbnd_events.dat", 'outlog' : "IDM_Events/sbnd_electron_{}_{}.dat".format(marr[0],marr[1]),'efficiency' : 0.6, "POT" : 6e20}
-        d_list.append(copy.deepcopy(d))
-        #miniboone_eval(d)
-    pool = Pool(processes=4)
-    pool.map(miniboone_eval,d_list)
+        #d={"model" : "Inelastic_Dark_Matter", "mv" : marr[0],"mdm1" : marr[1], "mdm2" : marr[2],"samplesize" : 2000, "signal_chan" : "Pion_Inelastic", 'max_scatter_energy' : 2, 'min_scatter_energy' : 0.01, 'max_scatter_angle' : 2*pi, "output_mode" : "summary", "det_switch" : "sbnd", "alpha_D" : 0.1, "channels" : channs, 'sumlog' : "IDM_Events/sbnd_pi0_curve_mx100.dat", 'outlog' : "IDM_Events/sbnd_pi0_{}_{}.dat".format(marr[0],marr[1]),'efficiency' : 0.6, "POT" : 10e20, "eps" : 1e-3}
+        #d_list.append(copy.deepcopy(d))
+        #d.update({"alpha_D" : 0.5})
+        #d_list.append(copy.deepcopy(d))
+        d={"model" : "Inelastic_Dark_Matter", "mv" : marr[0],"mdm1" : marr[1], "mdm2" : marr[2],"samplesize" : 2000, "signal_chan" : "NCE_electron", 'max_scatter_energy' : 2, 'min_scatter_energy' : 0.0, 'max_scatter_angle' : 0.14, "output_mode" : "summary", "det_switch" : "sbnd", "alpha_D" : 0.1, "channels" : channs, 'sumlog' : "IDM_Events/sbnd_elec_curve_mx100.dat", 'outlog' : "IDM_Events/sbnd_electron_{}_{}.dat".format(marr[0],marr[1]),'efficiency' : 0.6, "POT" : 6e20}
+        #d_list.append(copy.deepcopy(d))
+        miniboone_eval(d)
+        #d.update({"alpha_D" : 0.5})
+        #d_list.append(copy.deepcopy(d))
+    #pool = Pool(processes=4)
+    #pool.map(miniboone_eval,d_list)
 
 def execute_charm(genlist=True):
     if genlist:
@@ -1269,33 +1275,6 @@ def execute_bebc(genlist=True):
         d.update({"outlog" : "Claudia/bebc_{}_{}.dat".format(marr[0],round(marr[1],3))})
         bebc_eval(d)
 
-def execute_numi_test(genlist=True):
-    if genlist:
-        d={"prod_chan" : ["pi0_decay"],"proddist" : ["bmpt"],"samplesize" : 2e6,"output_mode" : "particle_list","partlistfile" : ["data/particle_list_numi.dat"]}
-        write_numi(d=d)
-        subp.call(["./build/main", "parameter_run.dat"])
-    massarr=[[600,200,1e-3]]
-    d=({"signal_chan" : "NCE_nucleon", "output_mode" : "dm_detector_distribution", "samplesize" : 50000, "min_scatter_energy" : 0, "max_scatter_energy" : 1e5, "efficiency" : 0.5, "alpha_D" : 0.5, "POT" : 6e20});
-    for marr in massarr:
-        d.update({"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2]})
-        d.update({"det_switch" : "test_sphere"})
-        numi_eval(d)
-
-def execute_numi_abs(genlist=True):
-    d_list=[]
-    if genlist:
-        d={"prod_chan" : ["pi0_decay"],"proddist" : ["bmpt"],"samplesize" : 2e6,"output_mode" : "particle_list","partlistfile" : ["data/particle_list_numi.dat"]}
-        write_numi_absorber(d=d)
-        subp.call(["./build/main", "parameter_run.dat"])
-    vmarr=[1,5,10,15,20,30,40,50,60,80,100,130,140,150,200,250,300,400,500,540,550,560,600,700,725,750,760,765,767,770,772,775,780,790,800,900,1000,1100,1200,1300,1400,1500,1750,2000]
-    #epsarr=[1e-6,3e-7,1e-7]
-    epsarr=[1e-3]
-    massarr=[[mv,mv,eps] for mv in vmarr for eps in epsarr]
-    d=({"signal_chan" : "Signal_Decay", "POT" : 0.13*6e20 , "pi0_per_POT" : 1, "output_mode" : "dm_detector_distribution", "samplesize" : 10000, "sumlog" : "YuDai_project/YuDai_abs.dat",  "model" : "Dark_Photon", "ptmax" : 1, "det_switch" : "YuDai_cylinder_abs", "channels" : [_pion_decay,_eta_decay,_brem]});
-    for marr in massarr:
-        d.update({"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "outlog" : "YuDai_project/YuDai_abs_{}_{}.dat".format(marr[0],marr[2])})
-        numi_eval(d)
-
 def execute_seaquest(genlist=True):
     d_list=[]
     external_list=True
@@ -1351,28 +1330,34 @@ def execute_numi(genlist=True):
         d={"prod_chan" : ["pi0_decay"],"proddist" : ["bmpt"],"samplesize" : 2e6,"output_mode" : "particle_list","partlistfile" : ["data/particle_list_numi.dat"]}
         write_numi(d=d)
         subp.call(["./build/main", "parameter_run.dat"])
-    #vmarr=[1,5,10,15,20,30,40,50,60,80,100,130,140,150,200,250,300,400,500,540,550,560,600,700,725,750,760,765,767,770,772,775,780,790,800,900,1000]
-    #vmarr=[1,5,10,15,20,30,40,50,60,80,100,130,140,150,200,250,300,400,500,540,550,560,600,700,800,900,1000]
-    vmarr=[50,200,500]
+    dmarr=[100]
+    #vmarr=[2,3,4,5,7,9,10,12,15,17,19,21,23]+[x for x in range(25,135,5)]+[131,132,133,134,135,136,137,139,195,198,202,205]+[x for x in range(140,200,10)]+[x for x in range(225,1010,25)]+[765,770,771,772,773,774,776,777,778,779,780,785] 
+    #vmarr+=[x for x in range(1250,2000,250)]+[x for x in range(2000,int(1e4),500)]+[x for x in range(int(1e4),int(1e5),int(1e4))]+[int(1e5)]
     #epsarr=[10**n for n in range(-8,-3)]+[3*10**n for n in range(-9,-4)]
-    #epsarr=[1e-6,3e-7,1e-7]
-    epsarr=[1e-3]
-    massarr=[[mv,mv/3.0,eps] for mv in vmarr for eps in epsarr]
+    #vmarr=[2,6,10,30]
+    vmarr=[25]
+    massarr=[[mv,mx] for mv in vmarr for mx in dmarr]
     #massarr=[[mv,10,eps] for mv in vmarr for eps in epsarr]
     #massarr=[[90,30,1e-3],[600,200,1e-3]]
     #d=({"signal_chan" : "Signal_Decay", "alpha_D" : 0, "pi0_per_POT" : 1, "output_mode" : "comprehensive", "samplesize" : 10000, "model" : "Dark_Photon", "ptmax" : 1, "det_switch" : "DUNE_HPgTPC", "channels" : [_pion_decay,_eta_decay,_brem], "min_scatter_energy" : 0});
     #d=({"signal_chan" : "Signal_Decay", "POT" : 1e21 , "pi0_per_POT" : 1, "output_mode" : "dm_detector_distribution", "samplesize" : 10000, "sumlog" : "YuDai_project/YuDai.dat", "model" : "Dark_Photon", "ptmax" : 1, "det_switch" : "YuDai_cylinder_2", "channels" : [_pion_decay,_eta_decay,_brem]});
     #d=({"signal_chan" : "Signal_Decay", "pi0_per_POT" : 1, "output_mode" : "comprehensive", "samplesize" : 10000, "model" : "Dark_Photon", "ptmax" : 1, "det_switch" : "YuDai_cylinder", "channels" : [_pion_decay,_eta_decay,_brem]});
-    d=({"signal_chan" : "NCE_electron", "output_mode" : "dm_detector_distribution", "samplesize" : 100000,  "sumlog" : "Claudia_MB_Numi/mini_numi_scatter.dat", "model" : "Dark_Photon","min_scatter_energy" : 0, "max_scatter_energy" : 20, "min_scatter_angle" : 0, "max_scatter_angle" : 6, "ptmax" : 2, "efficiency" : 1, "POT" : 6e20, "det_switch" : "miniboone_numi"});
+    #d=({"signal_chan" : "NCE_electron", "output_mode" : "dm_detector_distribution", "samplesize" : 100000,  "sumlog" : "Claudia_MB_Numi/mini_numi_scatter.dat", "model" : "Dark_Photon","min_scatter_energy" : 0, "max_scatter_energy" : 20, "min_scatter_angle" : 0, "max_scatter_angle" : 6, "ptmax" : 2, "efficiency" : 1, "POT" : 6e20, "det_switch" : "miniboone_numi"});
+    #d=({"max_trials" : 8e6,"signal_chan" : "NCE_electron", "output_mode" : "summary", "samplesize" : 2000,  "sumlog" : "IDM_Events/nova_curves.dat", "model" : "Dark_Photon","min_scatter_energy" : 0.5, "max_scatter_energy" : 5, "min_scatter_angle" : 0, "max_scatter_angle" : 6, "ptmax" : 2, "efficiency" : 0.5, "POT" : 2.97e20, "det_switch" : "nova", "etheta2_max" : 0.005,"model" : "Inelastic_Dark_Matter","channels" : [_pion_decay,_eta_decay,_brem]});
+    d=({"max_trials" : 80e6,"signal_chan" : "NCE_electron", "output_mode" : "comprehensive", "samplesize" : 100000,  "sumlog" : "IDM_Events/nova_curves.dat", "model" : "Dark_Photon","min_scatter_energy" : 0, "max_scatter_energy" : 20, "min_scatter_angle" : 0, "max_scatter_angle" : 6, "ptmax" : 2, "efficiency" : 0.5, "POT" : 2.97e20, "det_switch" : "nova", "etheta2_max" : -1,"model" : "Inelastic_Dark_Matter","channels" : [_pion_decay,_eta_decay,_brem],"outlog" : "nova_comp.dat"});
     #d=({"channels" : [_pion_decay, _eta_decay],"signal_chan" : "NCE_electron", "output_mode" : "summary", "samplesize" : 100000,  "sumlog" : "Claudia_MB_Numi/mini_numi_scatter.dat", "model" : "Dark_Photon","min_scatter_energy" : 0, "max_scatter_energy" : 2, "min_scatter_angle" : 0, "max_scatter_angle" : "0.24", "ptmax" : 2, "efficiency" : 1, "POT" : 6e20, "det_switch" : "miniboone_numi" });
     print(massarr)
+    d_list=[]
     for marr in massarr:
         #d.update({"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "outlog" : "YuDai_project/YuDai_{}_{}.dat".format(marr[0],marr[2])})
-        d.update({"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "outlog" : "Claudia_MB_Numi/MB_Numi_Intersect_{}_{}.dat".format(marr[0],marr[1])})
+        d.update({"mv" : marr[0],"mdm2" : marr[1],"mdm1" : marr[1], "eps" : 1e-3,"alpha_D" : 0.1})
+        #d_list.append(copy.deepcopy(d))
+        #d.update({"alpha_D" : 0.5})
+        #d_list.append(copy.deepcopy(d))
         #d.update({"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "outlog" : "Claudia_MB_Numi/MB_Numi_elec_{}_{}.dat".format(marr[0],marr[1])})
         #d.update({"mv" : marr[0],"mdm" : marr[1], "eps" : marr[2], "outlog" : "YuDai_project/YuDai_2_{}_{}.dat".format(marr[0],marr[2])})
         numi_eval(d)
-    #pool = Pool(processes=3)
+    #pool = Pool(processes=4)
     #pool.map(numi_eval,d_list)
 
 def execute_t2k(genlist=True):
@@ -1461,10 +1446,3 @@ def execute_lanl(genlist=True):
         #d={"mv" : marr[0], "alpha_D" : 1e-3, "mdm" : marr[1], "channels" : [_pion_decay], "signal_chan" : channelb, "det_switch" : "lanl_far", "samplesize" : 2000, "sumlog" : "Events/lanl40_b.dat"}
         #lanl_eval(d)
 
-#execute_lanl(genlist=True)
-#execute_lsnd(genlist=False)
-#execute_numi(genlist=False)
-#execute_ship(genlist=False)
-#execute_miniboone_parallel(genlist=True)
-#execute_t2k(genlist=False)
-#execute_coherent(genlist=False)

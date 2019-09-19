@@ -413,6 +413,8 @@ Parameter::Parameter(std::ifstream &instream){
 		Set_Double(angle_lower_limit_key, angle_lower_limit, keymap, 0);
 		Set_Double(angle_upper_limit_key, angle_upper_limit, keymap, 2.1*pi);
 		Set_Double(timing_key, timing_cut, keymap, 0);
+		Set_Double(etheta2_max_key,etheta2_max,keymap,-1);
+		Set_Double(etheta2_min_key,etheta2_min,keymap,-1);
         Set_String(scatter_dist_filename_key, scatter_dist_filename, keymap, "");
 
 		Set_Target_Parameters(keymap);

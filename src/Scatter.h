@@ -36,6 +36,7 @@ class Scatter{
 		void set_pMax(double pm){pMax=pm;}
 		void set_angle_limits(double min, double max){min_angle=min;max_angle=max;}
 		void set_energy_limits(double min, double max){Escatmin=min; Escatmax=max;}
+        void set_etheta2(double min, double max){etheta2_min=min; etheta2_max=max;}
         //void report(std::ostreami& out) const{out << pMax << std::endl;}
         //void set_scattering_energy(double emin, double emax){Escatmin=emin; Escatemax=emax;}
 		//double get_MDP(){return kap;}
@@ -46,6 +47,7 @@ class Scatter{
         bool decay;
 		double pMax, MDP, mdm, alD, kap;
 		double Escatmax, Escatmin,min_angle,max_angle;
+        double etheta2_min,etheta2_max;
 		//bool _End_state_with_DM_parallel_to_z=false;
         std::vector<std::string> parent_name_vec;
         std::vector<std::shared_ptr<DMGenerator> > decay_gen_vec;

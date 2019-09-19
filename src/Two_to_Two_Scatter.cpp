@@ -39,7 +39,10 @@ bool Two_to_Two_Scatter::probscatter(std::shared_ptr<detector>& det, std::list<P
     Particle recoil2(0);
     //Can probably add more cuts later!
     if(probscatter(det, *partit, recoil, recoil2)&&(min_angle<=0||recoil.Theta()>min_angle)&&(max_angle>2*pi||recoil.Theta()<max_angle)){
-        partit->Generate_Position();
+        if((etheta2_max>0 and pow(recoil.Theta(),2)*recoil.E>etheta2_max) or pow(recoil.Theta(),2)*recoil.E<etheta2_min){
+		    return false;
+	    }
+	    partit->Generate_Position();
         Link_Particles(*partit,recoil);
         partlist.insert(std::next(partit),recoil);
         //recoil2 handled by probscatter, which passes it off to scatterevent!
